@@ -59,8 +59,7 @@ class UserResource(resources.ModelResource):
     def import_obj(self, obj, data, dry_run, **kwargs):
         self._apply_row_overrides(obj, data)
         super().import_obj(obj, data, dry_run, **kwargs)
-        if not dry_run and obj.pk:
-            UserProfile.objects.get_or_create(user=obj)
+        UserProfile.objects.get_or_create(user=obj)
         password = self._get_row_value(data, "password") if self._row_has_key(data, "password") else None
         if isinstance(password, str):
             password = password.strip()
