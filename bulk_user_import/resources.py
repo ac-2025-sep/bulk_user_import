@@ -55,9 +55,9 @@ class UserResource(resources.ModelResource):
                     row[field] = value.strip()
         return super().before_import_row(row, **kwargs)
 
-    def import_obj(self, obj, data, dry_run):
+    def import_obj(self, obj, data, dry_run, **kwargs):
         self._apply_row_overrides(obj, data)
-        super().import_obj(obj, data, dry_run)
+        super().import_obj(obj, data, dry_run, **kwargs)
         password = self._get_row_value(data, "password") if self._row_has_key(data, "password") else None
         if isinstance(password, str):
             password = password.strip()
