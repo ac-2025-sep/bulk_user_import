@@ -25,14 +25,12 @@ class FlexibleBooleanWidget(BooleanWidget):
 
 
 class UserResource(resources.ModelResource):
+    # import-only column; we handle hashing manually
     password = fields.Field(column_name="password")
+
     is_active = fields.Field(column_name="is_active", attribute="is_active", widget=FlexibleBooleanWidget())
     is_staff = fields.Field(column_name="is_staff", attribute="is_staff", widget=FlexibleBooleanWidget())
-    is_superuser = fields.Field(
-        column_name="is_superuser",
-        attribute="is_superuser",
-        widget=FlexibleBooleanWidget(),
-    )
+    is_superuser = fields.Field(column_name="is_superuser", attribute="is_superuser", widget=FlexibleBooleanWidget())
 
     class Meta:
         model = get_user_model()
@@ -57,16 +55,46 @@ class UserResource(resources.ModelResource):
         return super().before_import_row(row, **kwargs)
 
     def import_obj(self, obj, data, dry_run, **kwargs):
+        """
+        Called before the instance is guaranteed to be saved.
+        So: do NOT create UserProfile here.
+        Also: stash password here; persist it after save.
+        """
         self._apply_row_overrides(obj, data)
-        super().import_obj(obj, data, dry_run, **kwargs)
-        UserProfile.objects.get_or_create(user=obj)
+
+        # stash password for after_save_instance
         password = self._get_row_value(data, "password") if self._row_has_key(data, "password") else None
         if isinstance(password, str):
             password = password.strip()
+        obj._import_password = password if password else None
+
+        return super().import_obj(obj, data, dry_run, **kwargs)
+
+    def after_save_instance(self, instance, using_transactions, dry_run):
+        """
+        Called after the instance is saved (instance.pk exists).
+        Safe place to create UserProfile + persist hashed password.
+        """
+        super().after_save_instance(instance, using_transactions, dry_run)
+
+        if dry_run or not instance.pk:
+            return
+
+        # Ensure Open edX user profile exists
+        UserProfile.objects.get_or_create(user=instance)
+
+        # Persist password safely (hashed) if provided
+        password = getattr(instance, "_import_password", None)
         if password:
-            obj.set_password(password)
+            instance.set_password(password)
+            instance.save(update_fields=["password"])
+
+        # cleanup
+        if hasattr(instance, "_import_password"):
+            delattr(instance, "_import_password")
 
     def _apply_row_overrides(self, obj, row):
+        # Prevent blank CSV cells from wiping existing values
         for field in ("email", "first_name", "last_name"):
             if not self._row_has_key(row, field):
                 continue
