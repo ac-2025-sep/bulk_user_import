@@ -1,0 +1,13 @@
+README.md
+pyproject.toml
+setup.cfg
+bulk_user_import/__init__.py
+bulk_user_import/admin.py
+bulk_user_import/apps.py
+bulk_user_import/resources.py
+bulk_user_import.egg-info/PKG-INFO
+bulk_user_import.egg-info/SOURCES.txt
+bulk_user_import.egg-info/dependency_links.txt
+bulk_user_import.egg-info/requires.txt
+bulk_user_import.egg-info/top_level.txt
+tests/test_import.py

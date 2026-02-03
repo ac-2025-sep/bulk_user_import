@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from import_export import fields, resources
 from import_export.widgets import BooleanWidget
+from common.djangoapps.student.models import UserProfile
+
 
 
 class FlexibleBooleanWidget(BooleanWidget):
@@ -31,6 +33,41 @@ class UserResource(resources.ModelResource):
         column_name="is_superuser",
         attribute="is_superuser",
         widget=FlexibleBooleanWidget(),
+    )
+
+    dealer_id = fields.Field(column_name="DEALER ID")
+    champion_name = fields.Field(column_name="CHAMPION NAME")
+    champion_mob = fields.Field(column_name="CHAMPION MOB.")
+    dealer_name = fields.Field(column_name="DEALER NAME")
+    city = fields.Field(column_name="CITY")
+    state = fields.Field(column_name="STATE")
+    dealer_category = fields.Field(column_name="DEALER CATEGORY")
+    cluster = fields.Field(column_name="CLUSTER")
+    asm_1 = fields.Field(column_name="ASM 1")
+    asm_2 = fields.Field(column_name="ASM 2")
+
+
+    fields = (
+        "username",
+        "email",
+        "first_name",
+        "last_name",
+        "password",
+        "is_active",
+        "is_staff",
+        "is_superuser",
+
+        # NEW columns from CSV
+        "dealer_id",
+        "champion_name",
+        "champion_mob",
+        "dealer_name",
+        "city",
+        "state",
+        "dealer_category",
+        "cluster",
+        "asm_1",
+        "asm_2",
     )
 
     class Meta:
@@ -126,3 +163,35 @@ class UserResource(resources.ModelResource):
                 return True
             except KeyError:
                 return False
+                
+        def after_save_instance(self, instance, row, **kwargs):
+        """
+        After User is created/updated, persist org metadata to UserProfile.meta["org"].
+        Runs for both create and update imports.
+        """
+        profile, _ = UserProfile.objects.get_or_create(user=instance)
+
+        meta = profile.meta or {}
+        org = meta.get("org", {})
+
+        def val(col):
+            v = self._get_row_value(row, col)
+            return v.strip() if isinstance(v, str) else v
+
+        org.update({
+            "dealer_id": val("DEALER ID"),
+            "champion_name": val("CHAMPION NAME"),
+            "champion_mobile": val("CHAMPION MOB."),
+            "dealer_name": val("DEALER NAME"),
+            "city": val("CITY"),
+            "state": val("STATE"),
+            "dealer_category": val("DEALER CATEGORY"),
+            "cluster": val("CLUSTER"),
+            "asm_1": val("ASM 1"),
+            "asm_2": val("ASM 2"),
+        })
+
+        meta["org"] = org
+        profile.meta = meta
+        profile.save()
+
