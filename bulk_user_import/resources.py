@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from import_export import fields, resources
 from import_export.widgets import BooleanWidget
 from common.djangoapps.student.models import UserProfile
+import json
 
 
 
@@ -164,20 +165,31 @@ class UserResource(resources.ModelResource):
             except KeyError:
                 return False
                 
-        def after_save_instance(self, instance, row, **kwargs):
-        """
-        After User is created/updated, persist org metadata to UserProfile.meta["org"].
-        Runs for both create and update imports.
-        """
+
+    def after_save_instance(self, instance, row, **kwargs):
         profile, _ = UserProfile.objects.get_or_create(user=instance)
-
-        meta = profile.meta or {}
+    
+        # meta is stored as TEXT in many Open edX releases
+        meta_raw = profile.meta
+        if not meta_raw:
+            meta = {}
+        elif isinstance(meta_raw, dict):
+            meta = meta_raw
+        else:
+            # string -> dict
+            try:
+                meta = json.loads(meta_raw)
+                if not isinstance(meta, dict):
+                    meta = {}
+            except Exception:
+                meta = {}
+    
         org = meta.get("org", {})
-
+    
         def val(col):
             v = self._get_row_value(row, col)
             return v.strip() if isinstance(v, str) else v
-
+    
         org.update({
             "dealer_id": val("DEALER ID"),
             "champion_name": val("CHAMPION NAME"),
@@ -190,8 +202,11 @@ class UserResource(resources.ModelResource):
             "asm_1": val("ASM 1"),
             "asm_2": val("ASM 2"),
         })
-
+    
         meta["org"] = org
-        profile.meta = meta
+    
+        # store back as string JSON (safe across versions)
+        profile.meta = json.dumps(meta, ensure_ascii=False)
         profile.save()
-
+    
+    
