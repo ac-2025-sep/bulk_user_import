@@ -93,14 +93,73 @@ class UserResource(resources.ModelResource):
                     row[field] = value.strip()
         return super().before_import_row(row, **kwargs)
 
+    # def import_obj(self, obj, data, dry_run):
+    #     self._apply_row_overrides(obj, data)
+    #     super().import_obj(obj, data, dry_run)
+    #     password = self._get_row_value(data, "password") if self._row_has_key(data, "password") else None
+    #     if isinstance(password, str):
+    #         password = password.strip()
+    #     if password:
+    #         obj.set_password(password)
+
     def import_obj(self, obj, data, dry_run):
+        # Apply your existing overrides
         self._apply_row_overrides(obj, data)
+
+        # Let import-export populate User fields
         super().import_obj(obj, data, dry_run)
+
+        # Password handling (unchanged)
         password = self._get_row_value(data, "password") if self._row_has_key(data, "password") else None
         if isinstance(password, str):
             password = password.strip()
         if password:
             obj.set_password(password)
+            if not dry_run:
+                obj.save()
+
+        # ---- 🔥 MOVE META LOGIC HERE 🔥 ----
+        if dry_run:
+            return
+
+        profile, _ = UserProfile.objects.get_or_create(user=obj)
+
+        meta_raw = profile.meta
+        if not meta_raw:
+            meta = {}
+        elif isinstance(meta_raw, dict):
+            meta = meta_raw
+        else:
+            try:
+                meta = json.loads(meta_raw)
+                if not isinstance(meta, dict):
+                    meta = {}
+            except Exception:
+                meta = {}
+
+        org = meta.get("org", {})
+
+        def val(col):
+            v = self._get_row_value(data, col)
+            return v.strip() if isinstance(v, str) else v
+
+        org.update({
+            "dealer_id": val("DEALER ID"),
+            "champion_name": val("CHAMPION NAME"),
+            "champion_mobile": val("CHAMPION MOB."),
+            "dealer_name": val("DEALER NAME"),
+            "city": val("CITY"),
+            "state": val("STATE"),
+            "dealer_category": val("DEALER CATEGORY"),
+            "cluster": val("CLUSTER"),
+            "asm_1": val("ASM 1"),
+            "asm_2": val("ASM 2"),
+        })
+
+        meta["org"] = org
+        profile.meta = json.dumps(meta, ensure_ascii=False)
+        profile.save()
+
 
     def _apply_row_overrides(self, obj, row):
         for field in ("email", "first_name", "last_name"):
@@ -165,48 +224,3 @@ class UserResource(resources.ModelResource):
             except KeyError:
                 return False
                 
-
-    def after_save_instance(self, instance, row, **kwargs):
-        profile, _ = UserProfile.objects.get_or_create(user=instance)
-    
-        # meta is stored as TEXT in many Open edX releases
-        meta_raw = profile.meta
-        if not meta_raw:
-            meta = {}
-        elif isinstance(meta_raw, dict):
-            meta = meta_raw
-        else:
-            # string -> dict
-            try:
-                meta = json.loads(meta_raw)
-                if not isinstance(meta, dict):
-                    meta = {}
-            except Exception:
-                meta = {}
-    
-        org = meta.get("org", {})
-    
-        def val(col):
-            v = self._get_row_value(row, col)
-            return v.strip() if isinstance(v, str) else v
-    
-        org.update({
-            "dealer_id": val("DEALER ID"),
-            "champion_name": val("CHAMPION NAME"),
-            "champion_mobile": val("CHAMPION MOB."),
-            "dealer_name": val("DEALER NAME"),
-            "city": val("CITY"),
-            "state": val("STATE"),
-            "dealer_category": val("DEALER CATEGORY"),
-            "cluster": val("CLUSTER"),
-            "asm_1": val("ASM 1"),
-            "asm_2": val("ASM 2"),
-        })
-    
-        meta["org"] = org
-    
-        # store back as string JSON (safe across versions)
-        profile.meta = json.dumps(meta, ensure_ascii=False)
-        profile.save()
-    
-    
