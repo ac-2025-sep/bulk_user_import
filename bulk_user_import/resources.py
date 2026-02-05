@@ -7,8 +7,8 @@ import json
 
 
 class FlexibleBooleanWidget(BooleanWidget):
-    TRUE_VALUES = {"1", "true", "yes", "y", "t"}
-    FALSE_VALUES = {"0", "false", "no", "n", "f"}
+    TRUE_VALUES = ("1", "true", "yes", "y", "t")
+    FALSE_VALUES = ("0", "false", "no", "n", "f")
 
     def clean(self, value, row=None, *args, **kwargs):
         if value is None:
