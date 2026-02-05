@@ -102,7 +102,7 @@ class UserResource(resources.ModelResource):
     #     if password:
     #         obj.set_password(password)
 
-    def import_obj(self, obj, data, dry_run):
+    def import_obj(self, obj, data, dry_run, **kwargs):
         # Apply your existing overrides
         self._apply_row_overrides(obj, data)
 
