@@ -46,6 +46,9 @@ class UserResource(resources.ModelResource):
     cluster = fields.Field(column_name="CLUSTER")
     asm_1 = fields.Field(column_name="ASM 1")
     asm_2 = fields.Field(column_name="ASM 2")
+    role = fields.Field(column_name="ROLE")
+    department = fields.Field(column_name="DEPARTMENT")
+    brand = fields.Field(column_name="BRAND")
 
 
     fields = (
@@ -69,6 +72,9 @@ class UserResource(resources.ModelResource):
         "cluster",
         "asm_1",
         "asm_2",
+        "role",
+        "department",
+        "brand",
     )
 
     class Meta:
@@ -95,6 +101,9 @@ class UserResource(resources.ModelResource):
             "cluster",
             "asm_1",
             "asm_2",
+            "role",
+            "department",
+            "brand",
         )
 
     # class Meta:
@@ -119,6 +128,10 @@ class UserResource(resources.ModelResource):
                     row[field] = value.strip()
         return super().before_import_row(row, **kwargs)
 
+    def after_init_instance(self, instance, new, row, **kwargs):
+        self._apply_row_overrides(instance, row)
+        return super().after_init_instance(instance, new, row, **kwargs)
+
     # def import_obj(self, obj, data, dry_run):
     #     self._apply_row_overrides(obj, data)
     #     super().import_obj(obj, data, dry_run)
@@ -141,6 +154,14 @@ class UserResource(resources.ModelResource):
             password = password.strip()
         if password:
             obj.set_password(password)
+
+    def before_save_instance(self, instance, row, **kwargs):
+        password = self._get_row_value(row, "password") if self._row_has_key(row, "password") else None
+        if isinstance(password, str):
+            password = password.strip()
+        if password:
+            instance.set_password(password)
+        return super().before_save_instance(instance, row, **kwargs)
 
     def after_save_instance(self, instance, row, **kwargs):
         super().after_save_instance(instance, row, **kwargs)
@@ -181,6 +202,9 @@ class UserResource(resources.ModelResource):
             "cluster": val("CLUSTER"),
             "asm_1": val("ASM 1"),
             "asm_2": val("ASM 2"),
+            "role": val("ROLE"),
+            "department": val("DEPARTMENT"),
+            "brand": val("BRAND"),
         })
 
         meta["org"] = org
