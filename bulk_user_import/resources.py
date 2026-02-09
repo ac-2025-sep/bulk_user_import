@@ -141,12 +141,14 @@ class UserResource(resources.ModelResource):
             password = password.strip()
         if password:
             obj.set_password(password)
-            if not dry_run:
-                obj.save()
 
-        if dry_run:
+    def after_save_instance(self, instance, row, **kwargs):
+        super().after_save_instance(instance, row, **kwargs)
+        if self._is_dry_run(kwargs):
             return
+        self._update_profile_meta(instance, row)
 
+    def _update_profile_meta(self, obj, data):
         profile, _ = UserProfile.objects.get_or_create(user=obj)
 
         meta_raw = profile.meta
