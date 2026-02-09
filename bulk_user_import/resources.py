@@ -72,30 +72,30 @@ class UserResource(resources.ModelResource):
     )
 
     class Meta:
-    model = get_user_model()
-    import_id_fields = ("username",)
-    fields = (
-        "username",
-        "email",
-        "first_name",
-        "last_name",
-        "password",
-        "is_active",
-        "is_staff",
-        "is_superuser",
-
-        # 👇 ADD THESE
-        "dealer_id",
-        "champion_name",
-        "champion_mob",
-        "dealer_name",
-        "city",
-        "state",
-        "dealer_category",
-        "cluster",
-        "asm_1",
-        "asm_2",
-    )
+        model = get_user_model()
+        import_id_fields = ("username",)
+        fields = (
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "password",
+            "is_active",
+            "is_staff",
+            "is_superuser",
+    
+            # 👇 ADD THESE
+            "dealer_id",
+            "champion_name",
+            "champion_mob",
+            "dealer_name",
+            "city",
+            "state",
+            "dealer_category",
+            "cluster",
+            "asm_1",
+            "asm_2",
+        )
 
     # class Meta:
     #     model = get_user_model()
