@@ -46,10 +46,6 @@ class UserResource(resources.ModelResource):
     cluster = fields.Field(column_name="CLUSTER")
     asm_1 = fields.Field(column_name="ASM 1")
     asm_2 = fields.Field(column_name="ASM 2")
-    role = fields.Field(column_name="ROLE")
-    department = fields.Field(column_name="DEPARTMENT")
-    brand = fields.Field(column_name="BRAND")
-
 
 
     fields = (
@@ -73,10 +69,6 @@ class UserResource(resources.ModelResource):
         "cluster",
         "asm_1",
         "asm_2",
-        "role",
-        "department",
-        "brand",
-
     )
 
     class Meta:
@@ -162,10 +154,6 @@ class UserResource(resources.ModelResource):
             "cluster": val("CLUSTER"),
             "asm_1": val("ASM 1"),
             "asm_2": val("ASM 2"),
-            "role": val("ROLE"),
-            "department": val("DEPARTMENT"),
-            "brand": val("BRAND"),
-
         })
 
         meta["org"] = org
