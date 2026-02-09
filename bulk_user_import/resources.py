@@ -146,26 +146,24 @@ class UserResource(resources.ModelResource):
         self._apply_row_overrides(obj, data)
 
         # Let import-export populate User fields
-        super().import_obj(obj, data, dry_run)
+        return super().import_obj(obj, data, dry_run, **kwargs)
 
-        # Password handling (unchanged)
-        password = self._get_row_value(data, "password") if self._row_has_key(data, "password") else None
-        if isinstance(password, str):
-            password = password.strip()
-        if password:
-            obj.set_password(password)
+    def before_save_instance(self, instance, using_transactions, dry_run, **kwargs):
+        row = kwargs.get("row") or kwargs.get("data")
+        if row is not None and self._row_has_key(row, "password"):
+            password = self._get_row_value(row, "password")
+            if isinstance(password, str):
+                password = password.strip()
+            if password:
+                instance.set_password(password)
+        return super().before_save_instance(instance, using_transactions, dry_run, **kwargs)
 
-    def before_save_instance(self, instance, row, **kwargs):
-        password = self._get_row_value(row, "password") if self._row_has_key(row, "password") else None
-        if isinstance(password, str):
-            password = password.strip()
-        if password:
-            instance.set_password(password)
-        return super().before_save_instance(instance, row, **kwargs)
-
-    def after_save_instance(self, instance, row, **kwargs):
-        super().after_save_instance(instance, row, **kwargs)
-        if self._is_dry_run(kwargs):
+    def after_save_instance(self, instance, using_transactions, dry_run, **kwargs):
+        super().after_save_instance(instance, using_transactions, dry_run, **kwargs)
+        if dry_run:
+            return
+        row = kwargs.get("row") or kwargs.get("data")
+        if row is None:
             return
         self._update_profile_meta(instance, row)
 
