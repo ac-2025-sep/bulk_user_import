@@ -155,13 +155,15 @@ class UserResource(resources.ModelResource):
         if password:
             obj.set_password(password)
 
-    def before_save_instance(self, instance, row, **kwargs):
-        password = self._get_row_value(row, "password") if self._row_has_key(row, "password") else None
-        if isinstance(password, str):
-            password = password.strip()
-        if password:
-            instance.set_password(password)
-        return super().before_save_instance(instance, row, **kwargs)
+    def before_save_instance(self, instance, using_transactions, dry_run, **kwargs):
+        row = kwargs.get("row") or kwargs.get("data")
+        if row is not None and self._row_has_key(row, "password"):
+            password = self._get_row_value(row, "password")
+            if isinstance(password, str):
+                password = password.strip()
+            if password:
+                instance.set_password(password)
+        return super().before_save_instance(instance, using_transactions, dry_run, **kwargs)
 
     def after_save_instance(self, instance, row, **kwargs):
         super().after_save_instance(instance, row, **kwargs)
