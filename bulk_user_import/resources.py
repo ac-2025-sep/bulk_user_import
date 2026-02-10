@@ -165,11 +165,22 @@ class UserResource(resources.ModelResource):
                 instance.set_password(password)
         return super().before_save_instance(instance, using_transactions, dry_run, **kwargs)
 
-    def after_save_instance(self, instance, row, **kwargs):
-        super().after_save_instance(instance, row, **kwargs)
-        if self._is_dry_run(kwargs):
+    # def after_save_instance(self, instance, row, **kwargs):
+    #     super().after_save_instance(instance, row, **kwargs)
+    #     if self._is_dry_run(kwargs):
+    #         return
+    #     self._update_profile_meta(instance, row)
+    def after_save_instance(self, instance, using_transactions, dry_run, **kwargs):
+        super().after_save_instance(instance, using_transactions, dry_run, **kwargs)
+        if dry_run:
             return
+    
+        row = kwargs.get("row") or kwargs.get("data")
+        if row is None:
+            return
+    
         self._update_profile_meta(instance, row)
+
 
     def _update_profile_meta(self, obj, data):
         profile, _ = UserProfile.objects.get_or_create(user=obj)
