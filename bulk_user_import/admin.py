@@ -5,7 +5,7 @@ from import_export.admin import ImportExportModelAdmin
 
 from bulk_user_import.resources import UserResource
 
-
+#@admin.register(User)
 class BulkUserImportAdmin(ImportExportModelAdmin, DjangoUserAdmin):
     resource_class = UserResource
 
