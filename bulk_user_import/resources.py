@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from common.djangoapps.student.models import UserProfile
 from import_export import fields, resources
 from import_export.widgets import BooleanWidget
 from common.djangoapps.student.models import UserProfile
@@ -27,14 +28,12 @@ class FlexibleBooleanWidget(BooleanWidget):
 
 
 class UserResource(resources.ModelResource):
+    # import-only column; we handle hashing manually
     password = fields.Field(column_name="password")
+
     is_active = fields.Field(column_name="is_active", attribute="is_active", widget=FlexibleBooleanWidget())
     is_staff = fields.Field(column_name="is_staff", attribute="is_staff", widget=FlexibleBooleanWidget())
-    is_superuser = fields.Field(
-        column_name="is_superuser",
-        attribute="is_superuser",
-        widget=FlexibleBooleanWidget(),
-    )
+    is_superuser = fields.Field(column_name="is_superuser", attribute="is_superuser", widget=FlexibleBooleanWidget())
 
     dealer_id = fields.Field(column_name="DEALER ID")
     champion_name = fields.Field(column_name="CHAMPION NAME")
@@ -152,8 +151,32 @@ class UserResource(resources.ModelResource):
         password = self._get_row_value(data, "password") if self._row_has_key(data, "password") else None
         if isinstance(password, str):
             password = password.strip()
+        obj._import_password = password if password else None
+
+        return super().import_obj(obj, data, dry_run, **kwargs)
+
+    def after_save_instance(self, instance, using_transactions, dry_run):
+        """
+        Called after the instance is saved (instance.pk exists).
+        Safe place to create UserProfile + persist hashed password.
+        """
+        super().after_save_instance(instance, using_transactions, dry_run)
+
+        if dry_run or not instance.pk:
+            return
+
+        # Ensure Open edX user profile exists
+        UserProfile.objects.get_or_create(user=instance)
+
+        # Persist password safely (hashed) if provided
+        password = getattr(instance, "_import_password", None)
         if password:
-            obj.set_password(password)
+            instance.set_password(password)
+            instance.save(update_fields=["password"])
+
+        # cleanup
+        if hasattr(instance, "_import_password"):
+            delattr(instance, "_import_password")
 
     def before_save_instance(self, instance, row, **kwargs):
         password = self._get_row_value(row, "password") if self._row_has_key(row, "password") else None
@@ -213,6 +236,7 @@ class UserResource(resources.ModelResource):
 
 
     def _apply_row_overrides(self, obj, row):
+        # Prevent blank CSV cells from wiping existing values
         for field in ("email", "first_name", "last_name"):
             if not self._row_has_key(row, field):
                 continue
