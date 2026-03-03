@@ -43,8 +43,8 @@ class UserResource(resources.ModelResource):
     state = fields.Field(column_name="STATE")
     dealer_category = fields.Field(column_name="DEALER CATEGORY")
     cluster = fields.Field(column_name="CLUSTER")
-    asm_1 = fields.Field(column_name="ASM 1")
-    asm_2 = fields.Field(column_name="ASM 2")
+    asm = fields.Field(column_name="ASM")
+    rsm = fields.Field(column_name="RSM")
     role = fields.Field(column_name="ROLE")
     department = fields.Field(column_name="DEPARTMENT")
     brand = fields.Field(column_name="BRAND")
@@ -69,8 +69,8 @@ class UserResource(resources.ModelResource):
         "state",
         "dealer_category",
         "cluster",
-        "asm_1",
-        "asm_2",
+        "asm",
+        "rsm",
         "role",
         "department",
         "brand",
@@ -98,8 +98,8 @@ class UserResource(resources.ModelResource):
             "state",
             "dealer_category",
             "cluster",
-            "asm_1",
-            "asm_2",
+            "asm",
+            "rsm",
             "role",
             "department",
             "brand",
@@ -223,8 +223,8 @@ class UserResource(resources.ModelResource):
             "state": val("STATE"),
             "dealer_category": val("DEALER CATEGORY"),
             "cluster": val("CLUSTER"),
-            "asm_1": val("ASM 1"),
-            "asm_2": val("ASM 2"),
+            "asm": val("ASM"),
+            "rsm": val("RSM"),
             "role": val("ROLE"),
             "department": val("DEPARTMENT"),
             "brand": val("BRAND"),
