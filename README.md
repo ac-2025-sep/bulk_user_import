@@ -27,7 +27,7 @@ INSTALLED_APPS += [
 
 1. **Add requirements**
    ```bash
-   tutor config save --set OPENEDX_EXTRA_PIP_REQUIREMENTS="django-import-export==3.3.7 bulk-user-import"
+   tutor config save --set OPENEDX_EXTRA_PIP_REQUIREMENTS="django-import-export==4.4.0 bulk-user-import"
    ```
 
 2. **Patch `INSTALLED_APPS`** (openedx-common-settings)
